@@ -42,3 +42,32 @@ class AddressDict:
     """
     Representation of all addresses.
     """
+    def __init__(self):
+        pass
+
+    def __getitem__(self, name):
+        pass
+
+    def add_address(self):
+        pass
+
+    def remove_address(self):
+        pass
+
+    def edit_address(self):
+        pass
+
+    def write(self):
+        pass
+
+
+def _build_parser():
+    pass
+
+
+def main():
+    pass
+
+
+if __name__ == "__main__":
+    main()
