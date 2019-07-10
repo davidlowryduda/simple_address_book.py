@@ -38,10 +38,7 @@ import os
 
 VERSION = "0.0.1"
 
-# Mutt is expecting responses in the form
-# david@lowryduda.com <TAB> David Lowry-Duda <TAB> OtherInfo <TAB> [ignored]
-
-
+# TODO add repr
 class AddressItem:
     """
     Representation of a single address entry.
@@ -183,6 +180,7 @@ class AddressList:
     AddressList stores a list of tuples of AddressItems. AddressList is read
     from a file if it exists, and is otherwise empty.
     """
+    #TODO add repr
 
     def __init__(self, filedir='.', filename='.address_list'):
         """
@@ -201,7 +199,20 @@ class AddressList:
                 self.addresses = list(map(_addressitem_from_line, lines))
 
     def __getitem__(self, name):
-        pass
+        """
+        Retrieves address containing `name`.
+
+        If more than one is found, raise an exception. To search, use the search
+        method.
+        """
+        matches = list(
+            filter(lambda aitem: name in aitem.name, self.addresses)
+        )
+        if not matches:
+            raise KeyError("Name {} does not appear in addresses.".format(name))
+        if len(matches) > 1:
+            raise IOError("{} appears multiple times.".format(name))
+        return matches[0]
 
     def add_address(self, **kwargs):
         """
@@ -211,12 +222,58 @@ class AddressList:
         """
         addressitem = AddressItem(**kwargs)
         self.addresses.append(addressitem)
+        # TODO check uniqueness of email addresses
+
+    def _unique_address(self, **kwargs):
+        """
+        Finds unique address with input, or raises exception.
+
+        Used in remove_address, edit_address, and __getitem__.
+        (Or rather it will be, once it's written).
+        """
+        pass
 
     def remove_address(self):
         pass
 
     def edit_address(self):
         pass
+
+    def search(self, **kwargs):
+        """
+        Returns list of addresses satisfying search criteria in **kwargs.
+
+        For each (key, val) in kwargs, search will require that `val` be in the
+        `key` attribute of each AddressItem. Searches are strict --- all
+        criteria must pass for an item to be returned.
+        """
+        ret = self.addresses
+        for key, val in kwargs.items():
+            # Slightly odd syntax setting default values for key and val so that
+            # v and k are not leaky cell variables.
+            ret = list(
+                filter(lambda aitem, v=val, k=key: v in getattr(aitem, k, ""), ret)
+            )
+            if not ret:
+                raise KeyError("No addresses found matching criteria.")
+        return ret
+
+    def mutt_search(self, term):
+        """
+        Returns list of address containing search term `term`. This is
+        meant to be used by mutt.
+
+        Addresses containing `term` in the name, email, otherinfo, or extrainfo
+        fields are returned. Note that extrainfo isn't displayed in mutt itself,
+        allowing a somewhat invisible search.
+        """
+        attrs = ("email_address", "name", "otherinfo", "extrainfo")
+        ret = list(
+            filter(lambda aitem: any(
+                term in getattr(aitem, attr, "") for attr in attrs
+            ), self.addresses)
+        )
+        return ret
 
     def write(self):
         """
@@ -228,7 +285,7 @@ class AddressList:
         if self.addresses:
             with open(path, 'w') as addressfile:
                 for addressitem in self.addresses:
-                    addressfile.write(str(addressitem))
+                    addressfile.write(str(addressitem) + "\n")
 
 
 def _build_parser():
@@ -240,7 +297,7 @@ def main():
 
 def stest():
     name = "D LD"
-    email = "yo@shonuff.com"
+    email = r"yo@shonuff.com"
     otherinfo = "awesome guy"
     alist = AddressList()
     alist.add_address(_name=name, _email_address=email, _otherinfo=otherinfo)
