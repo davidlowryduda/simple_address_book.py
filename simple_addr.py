@@ -34,6 +34,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+import os
 
 VERSION = "0.0.1"
 
@@ -70,42 +71,67 @@ class AddressItem:
 
         If `_email_address` or `_name` is not defined, raise an Exception.
         """
-        if (_email_address is None) or (_name is None):
-            raise IOError(
-                "Invalid address detected. Address and name must be given."
-            )
         self.email_address = _email_address
         self.name = _name
         self.otherinfo = _otherinfo
         self.extrainfo = _extrainfo
-        if kwargs:
-            self.misc = kwargs.items()
+        self.misc = kwargs.items()
+
+        self.validate()
 
     def __str__(self):
-        pass
+        """
+        A tab-separated single-line representation for the file. A line is of
+        the form
+
+            address\tname\totherinfo[\textrainfo][\tmisc1][\tmisc2]
+        """
+        ret = "{address}\t{name}\t{otherinfo}".format(
+            address   = self.email_address,
+            name      = self.name,
+            otherinfo = self.otherinfo
+        )
+        if self.extrainfo:
+            ret = ret + "\t" + self.extrainfo
+        if self.misc:
+            ret = ret + "\t" + self.format_misc()
+        return ret
+
+    def format_misc(self):
+        """
+        Gives a string representation for the misc part fo the address. This is
+        of the form
+
+            \t(key1, val1)\t(key2, val2)...
+        """
+        if not self.misc:
+            return ""
+        ret = ""
+        for key, val in self.misc:
+            ret = ret + "\t({key}, {val})".format(key=key, val=val)
+        return ret
 
     def validate(self):
-        pass
-
-    def set_email_addr(self, addr):
-        pass
-
-    def set_name(self, name):
-        pass
-
-    def set_otherinfo(self, otherinfo):
-        pass
-
-    def set_extrainfo(self, extrainfo):
-        pass
-
-    def set_misc(self, **kwargs):
-        pass
+        """
+        If email_address of name is not defined, raise an Exception.
+        If more than 8 misc attributes are given, raise an Exception.
+        """
+        if (self.email_address is None) or (self.name is None):
+            raise IOError(
+                "Invalid address detected. Address and name must be given."
+            )
+        if len(self.misc) > 8:
+            raise IOError(
+                "Invalid address detected. Too many misc descriptors."
+            )
 
 
 class AddressList:
     """
     Representation of all addresses.
+
+    AddressList stores a list of tuples of AddressItems. AddressList is read
+    from a file if it exists, and is otherwise empty.
     """
 
     def __init__(self, filedir='.', name='.address_list'):
