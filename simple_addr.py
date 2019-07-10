@@ -37,12 +37,81 @@ SOFTWARE.
 
 VERSION = "0.0.1"
 
+# Mutt is expecting responses in the form
+# david@lowryduda.com <TAB> David Lowry-Duda <TAB> OtherInfo <TAB> [ignored]
 
-class AddressDict:
+
+class AddressItem:
+    """
+    Representation of a single address entry.
+
+
+    Mutt expects responses in the form
+
+        david@lowryduda.com <TAB> David Lowry-Duda <TAB> OtherInfo <TAB> [other]
+
+    and mutt ignores [other stuff] (including any further tabbed data). Each
+    AddressItem must contain an `email_address` and `name`. Optionally it can
+    contain `otherinfo`, and `extrainfo`. Any `otherinfo` will be visible in
+    mutt, but `extrainfo` will not be visible in mutt.
+    """
+
+    def __init__(
+            self,
+            _email_address=None,
+            _name=None,
+            _otherinfo="",
+            _extrainfo="",
+            **kwargs
+        ):
+        """
+        Set email_address, name, otherinfo, and extrainfo.  Any additional
+        kwargs are also stored in (key, value) pairs.
+
+        If `_email_address` or `_name` is not defined, raise an Exception.
+        """
+        if (_email_address is None) or (_name is None):
+            raise IOError(
+                "Invalid address detected. Address and name must be given."
+            )
+        self.email_address = _email_address
+        self.name = _name
+        self.otherinfo = _otherinfo
+        self.extrainfo = _extrainfo
+        if kwargs:
+            self.misc = kwargs.items()
+
+    def __str__(self):
+        pass
+
+    def validate(self):
+        pass
+
+    def set_email_addr(self, addr):
+        pass
+
+    def set_name(self, name):
+        pass
+
+    def set_otherinfo(self, otherinfo):
+        pass
+
+    def set_extrainfo(self, extrainfo):
+        pass
+
+    def set_misc(self, **kwargs):
+        pass
+
+
+class AddressList:
     """
     Representation of all addresses.
     """
-    def __init__(self):
+
+    def __init__(self, filedir='.', name='.address_list'):
+        """
+        Read addresses from address_list if they exist.
+        """
         pass
 
     def __getitem__(self, name):
