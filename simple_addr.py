@@ -126,6 +126,56 @@ class AddressItem:
             )
 
 
+def _addressitem_from_line(line):
+    """
+    Convert a raw text line to an AddressItem.
+
+    The structure of a line is defined in the definition for AddressItem.
+    """
+    sline = line.split("\t")
+    if len(sline) < 2:
+        raise IOError("Error parsing address from line. Malformed data.")
+    address = sline[0]
+    name = sline[1]
+
+    if len(sline) > 2:
+        otherinfo = sline[2]
+    else:
+        otherinfo = ""
+    if len(sline) > 3:
+        extrainfo = sline[3]
+    else:
+        extrainfo = ""
+    if len(sline) > 4:
+        raw_misc = sline[4:]
+        misc = _raw_misc_to_dict(raw_misc)
+    else:
+        misc = {}
+
+    return AddressItem(
+        _email_address=address,
+        _name=name,
+        _otherinfo=otherinfo,
+        _extrainfo=extrainfo,
+        **misc
+    )
+
+
+def _raw_misc_to_dict(raw):
+    """
+    Converts text-form of misc to a dictionary.
+
+    misc will be stored in the form ["(key1, val1)", "(key2, val2)",...]
+    """
+    ret = {}
+    for elem in raw:
+        key, _, val = elem.partition(',')
+        key = key[1:].strip()
+        val = val[:-1].strip()
+        ret[key] = val
+    return ret
+
+
 class AddressList:
     """
     Representation of all addresses.
@@ -134,17 +184,33 @@ class AddressList:
     from a file if it exists, and is otherwise empty.
     """
 
-    def __init__(self, filedir='.', name='.address_list'):
+    def __init__(self, filedir='.', filename='.address_list'):
         """
-        Read addresses from address_list if they exist.
+        Read addresses from address_list in `filename` if they exist.
         """
-        pass
+        self.addresses = []
+        self.filedir = os.path.expanduser(filedir)
+        self.filename = filename
+
+        path = os.path.join(os.path.realpath(self.filedir), self.filename)
+        if os.path.isdir(path):
+            raise IOError("Invalid address_list file. File is a directory.")
+        if os.path.exists(path):
+            with open(path, 'r') as address_file:
+                lines = [line.strip() for line in address_file if line]
+                self.addresses = list(map(_addressitem_from_line, lines))
 
     def __getitem__(self, name):
         pass
 
-    def add_address(self):
-        pass
+    def add_address(self, **kwargs):
+        """
+        Add address with given data to addresses.
+
+        AddressItem is responsible for validation of input.
+        """
+        addressitem = AddressItem(**kwargs)
+        self.addresses.append(addressitem)
 
     def remove_address(self):
         pass
@@ -153,7 +219,16 @@ class AddressList:
         pass
 
     def write(self):
-        pass
+        """
+        Saves addressfile.
+        """
+        path = os.path.join(os.path.realpath(self.filedir), self.filename)
+        if os.path.isdir(path):
+            raise IOError("Invalid address file. File is a directory.")
+        if self.addresses:
+            with open(path, 'w') as addressfile:
+                for addressitem in self.addresses:
+                    addressfile.write(str(addressitem))
 
 
 def _build_parser():
@@ -163,6 +238,14 @@ def _build_parser():
 def main():
     pass
 
+def stest():
+    name = "D LD"
+    email = "yo@shonuff.com"
+    otherinfo = "awesome guy"
+    alist = AddressList()
+    alist.add_address(_name=name, _email_address=email, _otherinfo=otherinfo)
+    alist.write()
 
 if __name__ == "__main__":
-    main()
+    stest()
+    #main()
