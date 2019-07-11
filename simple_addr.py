@@ -322,7 +322,7 @@ def _build_parser():
     epilog = (
         "Author: David Lowry-Duda <david@lowryduda.com>."
         "\nPlease report any bugs to "
-        "https://github.com/davidlowryduda/simple_addr.py"
+        "https://github.com/davidlowryduda/simple_address_book.py"
     )
     parser = argparse.ArgumentParser(usage=usage, epilog=epilog)
     parser.add_argument("expr", nargs='*', metavar="EXPRESSION")
