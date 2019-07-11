@@ -34,9 +34,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
+import argparse
 import os
+import sys
 
 VERSION = "0.0.1"
+
 
 # TODO add repr
 class AddressItem:
@@ -224,6 +228,12 @@ class AddressList:
         self.addresses.append(addressitem)
         # TODO check uniqueness of email addresses
 
+    def add_addressitem(self, addressitem):
+        """
+        Add addressitem to addresses.
+        """
+        self.addresses.append(addressitem)
+
     def _unique_address(self, **kwargs):
         """
         Finds unique address with input, or raises exception.
@@ -238,6 +248,22 @@ class AddressList:
 
     def edit_address(self):
         pass
+
+    def print(self, sublist=None):
+        """
+        Prints addresses (or just those in `sublist` if given) to terminal.
+        """
+        addresses = self.addresses
+        total_len = len(addresses)
+        if sublist is not None:
+            addresses = sublist
+        print("In address-list ... {} entries ... {} matching".format(
+            total_len,
+            len(addresses)
+        ))
+        for aitem in addresses:
+            print(aitem)
+
 
     def search(self, **kwargs):
         """
@@ -289,20 +315,95 @@ class AddressList:
 
 
 def _build_parser():
-    pass
+    """
+    Create CLI.
+    """
+    usage = "Usage: %(prog)s [-dir DIR] [-file FILE] [options] [EXPRESSION]"
+    epilog = (
+        "Author: David Lowry-Duda <david@lowryduda.com>."
+        "\nPlease report any bugs to "
+        "https://github.com/davidlowryduda/simple_addr.py"
+    )
+    parser = argparse.ArgumentParser(usage=usage, epilog=epilog)
+    parser.add_argument("expr", nargs='*', metavar="EXPRESSION")
+
+    actions = parser.add_argument_group(
+        'Actions',
+        (
+            "If no actions are specified, then all addresses matching "
+            "EXPRESSION will be returned."
+        )
+    )
+    actions.add_argument("-a", "--add",
+                         dest="add",
+                         action="store_true", default=False,
+                         help=(
+                             "add address given by EXPRESSION. EXPRESSION should "
+                             "be of the form 'user@email.com\tname\totherinfo', "
+                             "or of the form 'user@email.com' 'name' 'other info', "
+                             "where each argument is given in a separate field."
+                         ))
+    actions.add_argument("-I", "--interactive-add",
+                         dest="interactive_add",
+                         action="store_true", default=False,
+                         help="Initialize an interactive script to add an address.")
+    actions.add_argument("-v", "--version",
+                         dest="print_version",
+                         action="store_true", default=False,
+                         help="Print version and quit.")
+
+    config = parser.add_argument_group("Configuration Options")
+    config.add_argument("-d", "--dir",
+                        dest="filedir", default=".",
+                        help="Use address-list in DIR",
+                        metavar="DIR")
+    config.add_argument("-f", "--file",
+                        dest="filename", default=".address_list",
+                        help="Use address-list FILE", metavar="FILE")
+    return parser
 
 
-def main():
-    pass
+def print_version():
+    """
+    Print version and exit.
+    """
+    output = (
+        f"simple_addr.py {VERSION}\n"
+        "Copyright 2019 David Lowry-Duda.\n"
+        "Licence: MIT License <https://opensource.org/licenses/MIT>.\n"
+        "This is permissive free software: you are free to change and redistribute it.\n"
+        "There is NO WARRANTY, to the extent permitted by law.\n\n"
+        "Written by David Lowry-Duda."
+    )
+    print(output)
 
-def stest():
-    name = "D LD"
-    email = r"yo@shonuff.com"
-    otherinfo = "awesome guy"
-    alist = AddressList()
-    alist.add_address(_name=name, _email_address=email, _otherinfo=otherinfo)
-    alist.write()
+
+def main(input_args=None):
+    """
+    Main entry point.
+    """
+    args = _build_parser().parse_args(args=input_args)
+    addresslist = AddressList(filedir=args.filedir, filename=args.filename)
+    expression = '\t'.join(args.expr).strip()
+    search_expr = ''.join(args.expr).strip()
+    if args.print_version:
+        print_version()
+    elif args.add:
+        addressitem = _addressitem_from_line(expression)
+        addresslist.add_addressitem(addressitem)
+        addresslist.write()
+    else:
+        if not search_expr:
+            addresslist.print()
+        else:
+            sublist = addresslist.mutt_search(search_expr)
+            addresslist.print(sublist)
+    sys.exit(0)
+
 
 if __name__ == "__main__":
-    stest()
-    #main()
+    try:
+        main()
+    except Exception as e:
+        print(e)
+        sys.exit(1)
