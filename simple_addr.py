@@ -38,6 +38,8 @@ SOFTWARE.
 import argparse
 import os
 import sys
+import email
+import re
 
 VERSION = "0.0.1"
 
@@ -160,6 +162,17 @@ def _addressitem_from_line(line):
         _extrainfo=extrainfo,
         **misc
     )
+
+
+def _addressitem_from_email(emailstr):
+    """
+    Extract name and email address from 'From' field in an email, and convert to
+    an AddressItem.
+    """
+    if len(emailstr) < 2:
+        raise IOError("Error parsing email. Aborting.")
+    _name, _email = extract_sender(emailstr)
+    return AddressItem(_email_address=_email, _name=_name)
 
 
 def _raw_misc_to_dict(raw):
@@ -322,7 +335,7 @@ def _build_parser():
     epilog = (
         "Author: David Lowry-Duda <david@lowryduda.com>."
         "\nPlease report any bugs to "
-        "https://github.com/davidlowryduda/simple_address_book.py"
+        "https://github.com/davidlowryduda/simple_addr.py"
     )
     parser = argparse.ArgumentParser(usage=usage, epilog=epilog)
     parser.add_argument("expr", nargs='*', metavar="EXPRESSION")
@@ -360,7 +373,66 @@ def _build_parser():
     config.add_argument("-f", "--file",
                         dest="filename", default=".address_list",
                         help="Use address-list FILE", metavar="FILE")
+
+    mutt = parser.add_argument_group("Mutt Integration")
+    mutt.add_argument("--mutt-add",
+                      dest="add_from_email",
+                      action="store_true", default=False,
+                      help=(
+                          "parse and extract sender from STDIN. "
+                          "STDIN should be a complete email, including "
+                          "headers. The 'From' field in the header is used "
+                          "for the extraction."
+                      ))
     return parser
+
+
+def extract_sender(emailstr):
+    """
+    Extracts name and email of sender from given email. Returns (name, email).
+
+    Parenthetical comments in the name or email are removed.
+    """
+    msg = email.message_from_string(emailstr)
+    sender = msg['From']
+    if sender is None:
+        raise IOError("Parsing email failed. Aborting.")
+
+    if "(" in emailstr:
+        sender = remove_comments_from_sender(sender)
+
+    if "<" not in sender:
+        raise KeyError("Parsing email sender failed. No address found.")
+
+    _name, _, _email = sender.partition("<")
+    _name = _name.strip()
+    _email = _email.rstrip(">").strip()
+    return _name, _email
+
+
+def remove_comments_from_sender(instring):
+    """
+    Remove parenthetical comments from email name and sender.
+
+    Did you know that
+
+        david (the bomb) lowry-duda <myemail@(stupid)place.com>
+
+    is valid in emails? Boo! Note that comments can contain escaped parentheses,
+    which this does not check for. If someone with such an email is messaging
+    you, consider replacing that person with a better person.
+    """
+    ## regex explanation
+    #
+    # \(    # match left paren
+    # [^\(] # followed by anything that's not a left paren
+    # *?    # a non-greedy number of times
+    # \)    # followed by right paren
+    parens_re = re.compile("\([^\(]*?\)")
+    instring = parens_re.sub('', instring)
+    if "(" in instring:
+        return remove_comments_from_sender(instring)
+    return instring
 
 
 def print_version():
@@ -368,13 +440,13 @@ def print_version():
     Print version and exit.
     """
     output = (
-        "simple_addr.py {VERSION}\n"
+        f"simple_addr.py {VERSION}\n"
         "Copyright 2019 David Lowry-Duda.\n"
         "Licence: MIT License <https://opensource.org/licenses/MIT>.\n"
         "This is permissive free software: you are free to change and redistribute it.\n"
         "There is NO WARRANTY, to the extent permitted by law.\n\n"
         "Written by David Lowry-Duda."
-    ).format(VERSION=VERSION)
+    )
     print(output)
 
 
@@ -384,15 +456,21 @@ def main(input_args=None):
     """
     args = _build_parser().parse_args(args=input_args)
     addresslist = AddressList(filedir=args.filedir, filename=args.filename)
-    expression = '\t'.join(args.expr).strip()
-    search_expr = ''.join(args.expr).strip()
     if args.print_version:
         print_version()
     elif args.add:
+        expression = '\t'.join(args.expr).strip()
         addressitem = _addressitem_from_line(expression)
         addresslist.add_addressitem(addressitem)
         addresslist.write()
+    elif args.add_from_email:
+        expression = ''.join(sys.stdin.readlines())
+        #expression = ''.join(args.expr).strip()
+        addressitem = _addressitem_from_email(expression)
+        addresslist.add_addressitem(addressitem)
+        addresslist.write()
     else:
+        search_expr = ''.join(args.expr).strip()
         if not search_expr:
             addresslist.print()
         else:
