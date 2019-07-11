@@ -440,13 +440,13 @@ def print_version():
     Print version and exit.
     """
     output = (
-        f"simple_addr.py {VERSION}\n"
+        "simple_addr.py {VERSION}\n"
         "Copyright 2019 David Lowry-Duda.\n"
         "Licence: MIT License <https://opensource.org/licenses/MIT>.\n"
         "This is permissive free software: you are free to change and redistribute it.\n"
         "There is NO WARRANTY, to the extent permitted by law.\n\n"
         "Written by David Lowry-Duda."
-    )
+    ).format(VERSION=VERSION)
     print(output)
 
 
