@@ -131,6 +131,15 @@ message (as deduced from the `From:` field of that email) is added to your
 `simple_addr.py` addressbook.
 
 
+## Tips
+
+### Convert gmail contacts to this format
+
+It is easy to convert gmail contacts to this format. (And other formats, for
+that matter, but this is part of a grander gmail --> mutt progression for me).
+For convenience, I placed the script I used to convert my contacts to this form
+in `convert_gmail_contacts.py`. Your mileage may vary.
+
 
 ## Imperfections
 
