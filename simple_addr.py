@@ -97,7 +97,7 @@ class AddressItem:
         if self.extrainfo:
             ret = ret + "\t" + self.extrainfo
         if self.misc:
-            ret = ret + "\t" + self.format_misc()
+            ret = ret + self.format_misc()
         return ret
 
     def format_misc(self):
@@ -184,7 +184,7 @@ def _raw_misc_to_dict(raw):
     ret = {}
     for elem in raw:
         key, _, val = elem.partition(',')
-        key = key[1:].strip()
+        key = key.lstrip("(").strip()
         val = val[:-1].strip()
         ret[key] = val
     return ret
@@ -356,10 +356,10 @@ def _build_parser():
                              "or of the form 'user@email.com' 'name' 'other info', "
                              "where each argument is given in a separate field."
                          ))
-    actions.add_argument("-I", "--interactive-add",
-                         dest="interactive_add",
-                         action="store_true", default=False,
-                         help="Initialize an interactive script to add an address.")
+#    actions.add_argument("-I", "--interactive-add",
+#                         dest="interactive_add",
+#                         action="store_true", default=False,
+#                         help="Initialize an interactive script to add an address.")
     actions.add_argument("-v", "--version",
                          dest="print_version",
                          action="store_true", default=False,
