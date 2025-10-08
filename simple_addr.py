@@ -428,7 +428,7 @@ def remove_comments_from_sender(instring):
     # [^\(] # followed by anything that's not a left paren
     # *?    # a non-greedy number of times
     # \)    # followed by right paren
-    parens_re = re.compile("\([^\(]*?\)")
+    parens_re = re.compile(r"\([^\(]*?\)")
     instring = parens_re.sub('', instring)
     if "(" in instring:
         return remove_comments_from_sender(instring)
